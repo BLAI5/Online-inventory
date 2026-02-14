@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Inventory (Production)</title>
+    <title>Image Inventory (No-Storage Mode)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .quantity-badge { text-shadow: 0px 1px 3px rgba(0,0,0,0.8); }
@@ -25,11 +25,10 @@
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                     </svg>
                 </span>
-                Image Inventory <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full border border-green-200">Online</span>
+                Image Inventory <span class="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full border border-purple-200">DB Mode</span>
             </h1>
             
             <div class="flex items-center space-x-3">
-                <!-- Slideshow Button -->
                 <button onclick="startSlideshow()" class="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 px-4 py-2 rounded-full border border-blue-200 transition-all shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -38,10 +37,9 @@
                     <span class="font-medium hidden sm:inline">Slideshow</span>
                 </button>
 
-                <!-- Settings Button -->
                 <button onclick="toggleSettingsModal()" class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full border border-gray-300 transition-all shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span class="font-medium hidden sm:inline" id="settingsBtnText">Settings</span>
@@ -52,34 +50,25 @@
 
     <!-- Main Content Area -->
     <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div id="imageGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            <!-- Images will be injected here via Firebase -->
-        </div>
+        <div id="imageGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
         <div id="emptyState" class="hidden text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-300 mx-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p class="text-lg text-gray-500">No images found in cloud storage.</p>
+            <p class="text-lg text-gray-500">No images found in database.</p>
             <p class="text-sm text-gray-400">Login to upload images.</p>
         </div>
         <div id="loadingState" class="text-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-4 text-gray-500">Connecting to cloud...</p>
+            <p class="mt-4 text-gray-500">Connecting to database...</p>
         </div>
     </main>
 
     <!-- Slideshow Overlay -->
     <div id="slideshowOverlay" class="fixed inset-0 bg-black z-50 hidden flex flex-col items-center justify-center">
-        <!-- Main Image -->
         <img id="slideshowImg" src="" class="max-w-full max-h-[85vh] object-contain transition-opacity duration-300">
-        
-        <!-- Controls -->
         <div class="absolute bottom-8 flex items-center space-x-4 bg-gray-900/50 p-4 rounded-2xl backdrop-blur-md">
              <button onclick="stopSlideshow()" class="bg-white text-gray-900 hover:bg-gray-100 px-6 py-2 rounded-xl font-bold transition-all flex items-center shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l9-4z" clip-rule="evenodd" transform="rotate(180 10 10)" /> 
-                    <rect x="6" y="6" width="8" height="8" rx="1" />
-                </svg>
                 Click to view all in stock designs
             </button>
         </div>
@@ -105,11 +94,9 @@
             </div>
             <h2 class="text-2xl font-bold mb-2 text-center text-gray-800">Admin Login</h2>
             <p class="text-gray-500 text-sm mb-6 text-center">Please enter the admin password.</p>
-            
             <input type="password" id="passwordInput" placeholder="Password" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
-            
             <div class="flex flex-col space-y-2">
-                <button onclick="checkPasswordAndLogin()" id="loginBtn" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg">Login</button>
+                <button onclick="checkPassword()" id="loginBtn" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg">Login</button>
                 <button onclick="closeAuthModal()" class="w-full py-3 text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
             </div>
             <p id="authError" class="text-red-500 text-sm mt-4 text-center hidden font-medium"></p>
@@ -122,7 +109,6 @@
             <div class="flex justify-between items-center mb-8 border-b pb-4">
                 <h2 class="text-2xl font-bold text-gray-800">Admin Control Panel</h2>
                 <div class="flex items-center gap-2">
-                    <button onclick="handleLogout()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded-lg text-sm font-bold transition-colors">Reset Login</button>
                     <button onclick="closeSettings()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold transition-colors">Close</button>
                 </div>
             </div>
@@ -138,7 +124,6 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Seconds per Image</label>
                     <input type="number" id="slideDurationInput" value="3" min="1" max="60" onchange="saveSlideshowSetting()" class="border-2 border-gray-100 p-3 rounded-xl w-full focus:ring-2 focus:ring-purple-500 outline-none transition-all">
-                    <p class="text-xs text-gray-400 mt-2">Changes are saved automatically.</p>
                 </div>
             </div>
 
@@ -148,7 +133,7 @@
                 <div id="uploadOverlay" class="absolute inset-0 bg-white/95 z-10 hidden flex items-center justify-center rounded-2xl transition-all">
                     <div class="text-center p-6 w-full max-w-xs">
                         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p id="uploadStatusText" class="text-blue-600 font-bold text-lg mb-2">Starting...</p>
+                        <p id="uploadStatusText" class="text-blue-600 font-bold text-lg mb-2">Processing...</p>
                         <p class="text-gray-400 text-xs">Do not close this window.</p>
                     </div>
                 </div>
@@ -174,9 +159,7 @@
                 <h3 class="text-lg font-bold text-gray-800">Your Inventory</h3>
                 <span id="itemCount" class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">0 Items</span>
             </div>
-            <div id="adminList" class="grid grid-cols-1 gap-4 pb-12">
-                <!-- List will be injected here -->
-            </div>
+            <div id="adminList" class="grid grid-cols-1 gap-4 pb-12"></div>
         </div>
     </div>
 
@@ -184,10 +167,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-        // --- FIREBASE CONFIGURATION (Production) ---
+        // NOTE: We are NOT importing Storage because we are saving directly to Database now
+        
+        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyApo5WnFrSJCGvve9F67dXAmPm-GBrdZZQ",
             authDomain: "online-design-stock.firebaseapp.com",
@@ -198,26 +180,21 @@
             measurementId: "G-P6JJ53KM62"
         };
 
-        // Initialize Firebase Services
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
-        const auth = getAuth(app);
         const colRef = collection(db, "inventory_images");
 
         let localImages = []; 
-        let currentUser = null;
         let slideshowInterval; 
         let currentSlideIndex = 0;
         const ADMIN_PASSWORD = "jessabd";
 
-        // Load slideshow settings
-        const savedDuration = localStorage.getItem('slideshow_delay');
-        if(savedDuration) {
-            document.getElementById('slideDurationInput').value = savedDuration;
+        // Load settings
+        if(localStorage.getItem('slideshow_delay')) {
+            document.getElementById('slideDurationInput').value = localStorage.getItem('slideshow_delay');
         }
 
-        // --- REAL-TIME DATA LISTENER ---
+        // --- REAL-TIME DATA ---
         onSnapshot(colRef, (snapshot) => {
             localImages = [];
             snapshot.docs.forEach(doc => {
@@ -227,16 +204,53 @@
             updateUI();
             document.getElementById('loadingState').classList.add('hidden');
         }, (error) => {
-            console.error("Firebase Error:", error);
+            console.error("Firebase Read Error:", error);
+            if (error.code === 'permission-denied') {
+                alert("Database Permission Denied. Please ensure your Firestore Database Rules are set to public: 'allow read, write: if true;'");
+            }
         });
 
-        // --- AUTH LISTENER ---
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            console.log("Auth State:", user ? "Logged In" : "Logged Out");
-        });
+        // --- IMAGE COMPRESSION LOGIC (Critical for Database Storage) ---
+        function resizeImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_WIDTH = 800; // Resize to max 800px to keep size small
+                        const MAX_HEIGHT = 800;
 
-        // --- UPLOAD LOGIC (Robusted) ---
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Compress to JPEG with 0.7 quality
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- UPLOAD LOGIC ---
         window.handleFileUpload = async function() {
             const fileInput = document.getElementById('fileInput');
             const qtyInput = document.getElementById('newImgQty');
@@ -248,48 +262,25 @@
                 return;
             }
 
-            // 1. Force Authentication Check
-            if (!currentUser) {
-                statusText.textContent = "Authenticating...";
-                overlay.classList.remove('hidden');
-                try {
-                    await signInAnonymously(auth);
-                } catch (e) {
-                    alert("Authentication failed. Please check your internet connection.");
-                    overlay.classList.add('hidden');
-                    return;
-                }
-            }
-
             const file = fileInput.files[0];
             const qty = parseInt(qtyInput.value) || 0;
 
             overlay.classList.remove('hidden');
-            statusText.textContent = "Uploading Image...";
+            statusText.textContent = "Compressing Image...";
 
             try {
-                // 2. Upload to Storage
-                // Use simple naming to avoid character issues
-                const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const fileName = 'inventory/' + Date.now() + '_' + safeName;
-                const storageRef = ref(storage, fileName);
+                // 1. Compress Image on Device
+                const base64String = await resizeImage(file);
                 
-                // Using uploadBytes (Simple/Reliable method)
-                const snapshot = await uploadBytes(storageRef, file);
-                
-                // 3. Get URL & Save Data
+                // 2. Save directly to Database (Skipping Storage Bucket)
                 statusText.textContent = "Saving to Database...";
-                const downloadURL = await getDownloadURL(snapshot.ref);
-
                 await addDoc(colRef, {
-                    url: downloadURL,
+                    url: base64String, // Saving the image data directly!
                     qty: qty,
                     name: file.name,
-                    storagePath: snapshot.ref.fullPath,
                     createdAt: Date.now()
                 });
 
-                // 4. Cleanup
                 fileInput.value = '';
                 qtyInput.value = '';
                 statusText.textContent = "✅ Success!";
@@ -298,126 +289,84 @@
                 }, 1000);
 
             } catch (error) {
-                console.error("Upload Error:", error);
-                let msg = "Upload failed.";
-                if(error.code === 'storage/unauthorized') msg = "Permission Denied. Please ensure Firebase Storage Rules allow writes.";
-                alert(msg + "\n" + error.message);
+                console.error("Save Error:", error);
+                let msg = error.message;
+                if(error.code === 'permission-denied') {
+                    msg = "Permission Denied. Check Firestore Database Rules in Console.";
+                }
+                alert("Error: " + msg);
                 overlay.classList.add('hidden');
             }
         }
 
-        // --- OTHER ACTIONS ---
-        window.checkPasswordAndLogin = async function() {
+        // --- AUTH & OTHER ---
+        window.checkPassword = function() {
             const password = document.getElementById('passwordInput').value;
             const errorText = document.getElementById('authError');
-            const btn = document.getElementById('loginBtn');
-
+            
             if (password !== ADMIN_PASSWORD) {
                 errorText.textContent = "Incorrect password.";
                 errorText.classList.remove('hidden');
                 return;
             }
-
-            try {
-                btn.textContent = "Verifying...";
-                btn.disabled = true;
-                if (!currentUser) {
-                    await signInAnonymously(auth);
-                }
-                window.closeAuthModal();
-                document.getElementById('settingsPanel').classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-                renderAdminList();
-                errorText.classList.add('hidden');
-            } catch (error) {
-                console.error("Login Error:", error);
-                errorText.textContent = "Connection failed (" + error.code + ").";
-                errorText.classList.remove('hidden');
-            } finally {
-                btn.textContent = "Login";
-                btn.disabled = false;
-            }
-        }
-
-        window.handleLogout = async function() {
-            if(confirm("Reset connection?")) {
-                await signOut(auth);
-                window.closeSettings();
-            }
+            window.closeAuthModal();
+            document.getElementById('settingsPanel').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            renderAdminList();
+            errorText.classList.add('hidden');
         }
 
         window.updateQty = async function(id, newQty) {
-            if (!currentUser) return; 
             try { await updateDoc(doc(db, "inventory_images", id), { qty: parseInt(newQty) || 0 }); } catch(e) { console.error(e); }
         }
 
-        window.deleteImage = async function(id, storagePath) {
-            if (!currentUser) return;
+        window.deleteImage = async function(id) {
             if(!confirm("Are you sure?")) return;
-            try {
-                await deleteDoc(doc(db, "inventory_images", id));
-                if (storagePath) await deleteObject(ref(storage, storagePath));
-            } catch(e) { console.error(e); alert(e.message); }
+            try { await deleteDoc(doc(db, "inventory_images", id)); } catch(e) { console.error(e); }
         }
 
         // --- SLIDESHOW ---
-        window.saveSlideshowSetting = function() {
-            localStorage.setItem('slideshow_delay', document.getElementById('slideDurationInput').value);
-        }
-
+        window.saveSlideshowSetting = function() { localStorage.setItem('slideshow_delay', document.getElementById('slideDurationInput').value); }
         window.startSlideshow = function() {
             if (localImages.length === 0) { alert("No images!"); return; }
             let duration = Math.max(1, parseInt(document.getElementById('slideDurationInput').value) || 3);
-            
             document.getElementById('slideshowOverlay').classList.remove('hidden');
             currentSlideIndex = 0;
             updateSlideshowImage();
-
             if (slideshowInterval) clearInterval(slideshowInterval);
             slideshowInterval = setInterval(() => {
                 currentSlideIndex = (currentSlideIndex + 1) % localImages.length;
                 updateSlideshowImage();
             }, duration * 1000);
         }
-
         window.stopSlideshow = function() {
             clearInterval(slideshowInterval);
             document.getElementById('slideshowOverlay').classList.add('hidden');
         }
-
         function updateSlideshowImage() {
             if (localImages[currentSlideIndex]) document.getElementById('slideshowImg').src = localImages[currentSlideIndex].url;
         }
 
-        // --- UI HELPERS ---
+        // --- UI ---
         function renderAdminList() {
             const list = document.getElementById('adminList');
             const count = document.getElementById('itemCount');
             list.innerHTML = '';
             count.textContent = `${localImages.length} Item${localImages.length === 1 ? '' : 's'}`;
-
             if (localImages.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-gray-400 bg-white rounded-xl border border-dashed">No items in cloud.</div>`;
+                list.innerHTML = `<div class="text-center py-10 text-gray-400 bg-white rounded-xl border border-dashed">No items.</div>`;
                 return;
             }
-
             localImages.forEach(img => {
                 const item = document.createElement('div');
                 item.className = "flex items-center space-x-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow";
                 item.innerHTML = `
-                    <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                        <img src="${img.url}" class="w-full h-full object-cover">
-                    </div>
+                    <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100"><img src="${img.url}" class="w-full h-full object-cover"></div>
                     <div class="flex-grow min-w-0">
                         <p class="text-sm font-bold text-gray-800 truncate">${img.name || 'Image'}</p>
-                        <div class="mt-1 flex items-center space-x-2">
-                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Qty:</span>
-                            <input type="number" value="${img.qty}" onchange="window.updateQty('${img.id}', this.value)" class="border-2 border-gray-50 p-1.5 rounded-lg w-20 text-sm font-bold focus:border-blue-400 outline-none">
-                        </div>
+                        <div class="mt-1 flex items-center space-x-2"><span class="text-xs font-bold text-gray-400 uppercase">Qty:</span><input type="number" value="${img.qty}" onchange="window.updateQty('${img.id}', this.value)" class="border-2 border-gray-50 p-1.5 rounded-lg w-20 text-sm font-bold focus:border-blue-400 outline-none"></div>
                     </div>
-                    <button onclick="window.deleteImage('${img.id}', '${img.storagePath || ''}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
+                    <button onclick="window.deleteImage('${img.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                 `;
                 list.appendChild(item);
             });
@@ -427,7 +376,6 @@
             const grid = document.getElementById('imageGrid');
             const empty = document.getElementById('emptyState');
             grid.innerHTML = '';
-            
             if (localImages.length === 0) empty.classList.remove('hidden');
             else {
                 empty.classList.add('hidden');
@@ -435,13 +383,7 @@
                     const card = document.createElement('div');
                     card.className = "group relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1";
                     card.onclick = () => window.openFullscreen(img.url);
-                    card.innerHTML = `
-                        <div class="aspect-square bg-gray-50 overflow-hidden relative">
-                             <div class="absolute inset-0 bg-gray-200 animate-pulse" onload="this.style.display='none'"></div>
-                            <img src="${img.url}" alt="Item" class="w-full h-full object-cover" onload="this.previousElementSibling.style.display='none'">
-                        </div>
-                        <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest backdrop-blur-md border border-white/20 shadow-lg quantity-badge">QTY: ${img.qty}</div>
-                    `;
+                    card.innerHTML = `<div class="aspect-square bg-gray-50 overflow-hidden relative"><img src="${img.url}" class="w-full h-full object-cover"></div><div class="absolute bottom-2 right-2 bg-black/70 text-white px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest backdrop-blur-md border border-white/20 shadow-lg quantity-badge">QTY: ${img.qty}</div>`;
                     grid.appendChild(card);
                 });
             }
@@ -453,7 +395,7 @@
         window.closeSettings = function() { document.getElementById('settingsPanel').classList.add('hidden'); document.body.style.overflow = ''; }
         window.openFullscreen = function(url) { document.getElementById('fullscreenImage').src = url; document.getElementById('fullscreenOverlay').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         window.closeFullscreen = function() { document.getElementById('fullscreenOverlay').classList.add('hidden'); document.body.style.overflow = ''; }
-        document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkPasswordAndLogin(); });
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkPassword(); });
     </script>
 </body>
 </html>
