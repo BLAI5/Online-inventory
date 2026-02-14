@@ -34,7 +34,7 @@
             </h1>
             
             <div class="flex items-center space-x-3">
-                <!-- New Slideshow Button -->
+                <!-- Slideshow Button -->
                 <button onclick="startSlideshow()" class="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 px-4 py-2 rounded-full border border-blue-200 transition-all shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -64,7 +64,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p class="text-lg text-gray-500">No images found.</p>
+            <p class="text-lg text-gray-500">No images found in cloud storage.</p>
             <p class="text-sm text-gray-400">Login to upload images.</p>
         </div>
         <div id="loadingState" class="text-center py-20">
@@ -82,7 +82,7 @@
         <div class="absolute bottom-8 flex items-center space-x-4 bg-gray-900/50 p-4 rounded-2xl backdrop-blur-md">
              <button onclick="stopSlideshow()" class="bg-white text-gray-900 hover:bg-gray-100 px-6 py-2 rounded-xl font-bold transition-all flex items-center shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l9-4z" clip-rule="evenodd" transform="rotate(180 10 10)" /> <!-- Using a square icon conceptually for stop -->
+                    <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l9-4z" clip-rule="evenodd" transform="rotate(180 10 10)" /> 
                     <rect x="6" y="6" width="8" height="8" rx="1" />
                 </svg>
                 Click to view all in stock designs
@@ -211,7 +211,7 @@
         // --- GLOBAL VARIABLES ---
         let localImages = []; 
         let currentUser = null;
-        let slideshowInterval; // Variable to hold the timer
+        let slideshowInterval; 
         let currentSlideIndex = 0;
         
         const ADMIN_PASSWORD = "jessabd";
@@ -238,6 +238,11 @@
         // --- AUTH LISTENER ---
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
+            if (user) {
+                console.log("User is authenticated:", user.uid);
+            } else {
+                console.log("User is logged out");
+            }
         });
 
         // --- SLIDESHOW FUNCTIONS (Exposed to window) ---
@@ -253,29 +258,23 @@
                 return;
             }
 
-            // Get Duration from Input (or local storage if input is hidden)
             let durationSeconds = parseInt(document.getElementById('slideDurationInput').value) || 3;
-            // Limit minimum to 1 second to prevent crashing
             if(durationSeconds < 1) durationSeconds = 1;
             
             const intervalMs = durationSeconds * 1000;
 
-            // Show Overlay
             const overlay = document.getElementById('slideshowOverlay');
             overlay.classList.remove('hidden');
             
-            // Reset state
             currentSlideIndex = 0;
             updateSlideshowImage();
 
-            // Clear any existing interval just in case
             if (slideshowInterval) clearInterval(slideshowInterval);
 
-            // Start Timer
             slideshowInterval = setInterval(() => {
                 currentSlideIndex++;
                 if (currentSlideIndex >= localImages.length) {
-                    currentSlideIndex = 0; // Loop back to start
+                    currentSlideIndex = 0; 
                 }
                 updateSlideshowImage();
             }, intervalMs);
@@ -288,7 +287,6 @@
 
         function updateSlideshowImage() {
             const img = document.getElementById('slideshowImg');
-            // Check if index is valid
             if (localImages[currentSlideIndex]) {
                 img.src = localImages[currentSlideIndex].url;
             }
@@ -349,6 +347,7 @@
                 btn.textContent = "Verifying...";
                 btn.disabled = true;
                 
+                // If not already logged in, try anonymous auth
                 if (!currentUser) {
                     await signInAnonymously(auth);
                 }
@@ -360,8 +359,8 @@
                 errorText.classList.add('hidden');
                 
             } catch (error) {
-                console.error(error);
-                errorText.textContent = "Connection error. Please try again.";
+                console.error("Login failed:", error);
+                errorText.textContent = "Error: " + error.code + ". Enable Anonymous Auth in Console.";
                 errorText.classList.remove('hidden');
             } finally {
                 btn.textContent = "Login";
@@ -372,7 +371,10 @@
         // --- DATA ACTIONS ---
 
         window.handleFileUpload = async function() {
-            if (!currentUser) { alert("Session expired. Please login again."); return; }
+            if (!currentUser) { 
+                alert("Session invalid. Please refresh the page and log in again."); 
+                return; 
+            }
             
             const fileInput = document.getElementById('fileInput');
             const qtyInput = document.getElementById('newImgQty');
@@ -389,10 +391,15 @@
             overlay.classList.remove('hidden');
 
             try {
-                const storageRef = ref(storage, 'inventory/' + Date.now() + '_' + file.name);
+                // 1. Upload to Storage
+                // Use a unique name
+                const fileName = 'inventory/' + Date.now() + '_' + file.name;
+                const storageRef = ref(storage, fileName);
+                
                 const snapshot = await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(snapshot.ref);
 
+                // 2. Save to Firestore
                 await addDoc(colRef, {
                     url: downloadURL,
                     qty: qty,
@@ -406,8 +413,8 @@
                 alert("Upload Successful!");
 
             } catch (error) {
-                console.error("Upload failed", error);
-                alert("Upload failed: " + error.message);
+                console.error("Upload failed details:", error);
+                alert("Upload failed. Error: " + error.message + " (" + error.code + ")");
             } finally {
                 overlay.classList.add('hidden');
             }
