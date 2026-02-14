@@ -6,16 +6,11 @@
     <title>Image Inventory (Production)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .quantity-badge {
-            text-shadow: 0px 1px 3px rgba(0,0,0,0.8);
-        }
-        /* Custom scrollbar */
+        .quantity-badge { text-shadow: 0px 1px 3px rgba(0,0,0,0.8); }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        
-        /* Loading overlay */
         #loadingOverlay { backdrop-filter: blur(5px); }
     </style>
 </head>
@@ -153,7 +148,7 @@
                 <div id="uploadOverlay" class="absolute inset-0 bg-white/95 z-10 hidden flex items-center justify-center rounded-2xl transition-all">
                     <div class="text-center p-6 w-full max-w-xs">
                         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p id="uploadStatusText" class="text-blue-600 font-bold text-lg mb-2">Uploading...</p>
+                        <p id="uploadStatusText" class="text-blue-600 font-bold text-lg mb-2">Starting...</p>
                         <p class="text-gray-400 text-xs">Do not close this window.</p>
                     </div>
                 </div>
@@ -189,11 +184,10 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        // Reverted to standard uploadBytes for simplicity/compatibility
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- FIREBASE CONFIGURATION ---
+        // --- FIREBASE CONFIGURATION (Production) ---
         const firebaseConfig = {
             apiKey: "AIzaSyApo5WnFrSJCGvve9F67dXAmPm-GBrdZZQ",
             authDomain: "online-design-stock.firebaseapp.com",
@@ -211,15 +205,13 @@
         const auth = getAuth(app);
         const colRef = collection(db, "inventory_images");
 
-        // --- GLOBAL VARIABLES ---
         let localImages = []; 
         let currentUser = null;
         let slideshowInterval; 
         let currentSlideIndex = 0;
-        
         const ADMIN_PASSWORD = "jessabd";
 
-        // Initialize settings from local storage
+        // Load slideshow settings
         const savedDuration = localStorage.getItem('slideshow_delay');
         if(savedDuration) {
             document.getElementById('slideDurationInput').value = savedDuration;
@@ -236,105 +228,85 @@
             document.getElementById('loadingState').classList.add('hidden');
         }, (error) => {
             console.error("Firebase Error:", error);
-            if(error.code === 'permission-denied') {
-                alert("Database permission error. Please verify Firebase Rules.");
-            }
         });
 
         // --- AUTH LISTENER ---
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
-            if (user) console.log("Connected as:", user.uid);
-            else console.log("Disconnected");
+            console.log("Auth State:", user ? "Logged In" : "Logged Out");
         });
 
-        // --- SLIDESHOW FUNCTIONS (Exposed to window) ---
-        
-        window.saveSlideshowSetting = function() {
-            const val = document.getElementById('slideDurationInput').value;
-            localStorage.setItem('slideshow_delay', val);
-        }
+        // --- UPLOAD LOGIC (Robusted) ---
+        window.handleFileUpload = async function() {
+            const fileInput = document.getElementById('fileInput');
+            const qtyInput = document.getElementById('newImgQty');
+            const overlay = document.getElementById('uploadOverlay');
+            const statusText = document.getElementById('uploadStatusText');
 
-        window.startSlideshow = function() {
-            if (localImages.length === 0) {
-                alert("No images to show! Please upload some first.");
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert("Please select a file first.");
                 return;
             }
 
-            let durationSeconds = parseInt(document.getElementById('slideDurationInput').value) || 3;
-            if(durationSeconds < 1) durationSeconds = 1;
-            
-            const intervalMs = durationSeconds * 1000;
-
-            const overlay = document.getElementById('slideshowOverlay');
-            overlay.classList.remove('hidden');
-            
-            currentSlideIndex = 0;
-            updateSlideshowImage();
-
-            if (slideshowInterval) clearInterval(slideshowInterval);
-
-            slideshowInterval = setInterval(() => {
-                currentSlideIndex++;
-                if (currentSlideIndex >= localImages.length) {
-                    currentSlideIndex = 0; 
+            // 1. Force Authentication Check
+            if (!currentUser) {
+                statusText.textContent = "Authenticating...";
+                overlay.classList.remove('hidden');
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) {
+                    alert("Authentication failed. Please check your internet connection.");
+                    overlay.classList.add('hidden');
+                    return;
                 }
-                updateSlideshowImage();
-            }, intervalMs);
-        }
-
-        window.stopSlideshow = function() {
-            if (slideshowInterval) clearInterval(slideshowInterval);
-            document.getElementById('slideshowOverlay').classList.add('hidden');
-        }
-
-        function updateSlideshowImage() {
-            const img = document.getElementById('slideshowImg');
-            if (localImages[currentSlideIndex]) {
-                img.src = localImages[currentSlideIndex].url;
             }
-        }
 
-        // --- UI UPDATER ---
-        function updateUI() {
-            const grid = document.getElementById('imageGrid');
-            const empty = document.getElementById('emptyState');
-            grid.innerHTML = '';
+            const file = fileInput.files[0];
+            const qty = parseInt(qtyInput.value) || 0;
 
-            if (localImages.length === 0) {
-                empty.classList.remove('hidden');
-            } else {
-                empty.classList.add('hidden');
-                localImages.forEach(img => {
-                    const card = document.createElement('div');
-                    card.className = "group relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1";
-                    card.onclick = () => window.openFullscreen(img.url);
-                    
-                    card.innerHTML = `
-                        <div class="aspect-square bg-gray-50 overflow-hidden relative">
-                             <div class="absolute inset-0 bg-gray-200 animate-pulse" onload="this.style.display='none'"></div>
-                            <img src="${img.url}" alt="Item" class="w-full h-full object-cover" onload="this.previousElementSibling.style.display='none'">
-                        </div>
-                        <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest backdrop-blur-md border border-white/20 shadow-lg quantity-badge">
-                            QTY: ${img.qty}
-                        </div>
-                        <div class="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors flex items-center justify-center">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                            </svg>
-                        </div>
-                    `;
-                    grid.appendChild(card);
+            overlay.classList.remove('hidden');
+            statusText.textContent = "Uploading Image...";
+
+            try {
+                // 2. Upload to Storage
+                // Use simple naming to avoid character issues
+                const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const fileName = 'inventory/' + Date.now() + '_' + safeName;
+                const storageRef = ref(storage, fileName);
+                
+                // Using uploadBytes (Simple/Reliable method)
+                const snapshot = await uploadBytes(storageRef, file);
+                
+                // 3. Get URL & Save Data
+                statusText.textContent = "Saving to Database...";
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                await addDoc(colRef, {
+                    url: downloadURL,
+                    qty: qty,
+                    name: file.name,
+                    storagePath: snapshot.ref.fullPath,
+                    createdAt: Date.now()
                 });
-            }
 
-            if(!document.getElementById('settingsPanel').classList.contains('hidden')) {
-                renderAdminList();
+                // 4. Cleanup
+                fileInput.value = '';
+                qtyInput.value = '';
+                statusText.textContent = "✅ Success!";
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 1000);
+
+            } catch (error) {
+                console.error("Upload Error:", error);
+                let msg = "Upload failed.";
+                if(error.code === 'storage/unauthorized') msg = "Permission Denied. Please ensure Firebase Storage Rules allow writes.";
+                alert(msg + "\n" + error.message);
+                overlay.classList.add('hidden');
             }
         }
 
-        // --- AUTH ACTIONS ---
-        
+        // --- OTHER ACTIONS ---
         window.checkPasswordAndLogin = async function() {
             const password = document.getElementById('passwordInput').value;
             const errorText = document.getElementById('authError');
@@ -349,130 +321,75 @@
             try {
                 btn.textContent = "Verifying...";
                 btn.disabled = true;
-                
-                // Ensure we have a valid anonymous session
                 if (!currentUser) {
                     await signInAnonymously(auth);
                 }
-                
                 window.closeAuthModal();
                 document.getElementById('settingsPanel').classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
                 renderAdminList();
                 errorText.classList.add('hidden');
-                
             } catch (error) {
-                console.error("Login failed:", error);
-                // Helpful error handling
-                if(error.code === 'auth/unauthorized-domain') {
-                    errorText.textContent = "Error: This website domain is not authorized in Firebase Console.";
-                } else {
-                    errorText.textContent = "Connection failed (" + error.code + "). Try clicking 'Reset Login'.";
-                }
+                console.error("Login Error:", error);
+                errorText.textContent = "Connection failed (" + error.code + ").";
                 errorText.classList.remove('hidden');
             } finally {
                 btn.textContent = "Login";
                 btn.disabled = false;
             }
         }
-        
+
         window.handleLogout = async function() {
-            if(confirm("This will refresh your connection. You'll need to enter the password again.")) {
+            if(confirm("Reset connection?")) {
                 await signOut(auth);
                 window.closeSettings();
-                alert("Connection reset. Please log in again.");
-            }
-        }
-
-        // --- DATA ACTIONS ---
-
-        window.handleFileUpload = async function() {
-            if (!currentUser) { 
-                alert("Connection lost. Please close Settings and log in again."); 
-                return; 
-            }
-            
-            const fileInput = document.getElementById('fileInput');
-            const qtyInput = document.getElementById('newImgQty');
-            const overlay = document.getElementById('uploadOverlay');
-            const statusText = document.getElementById('uploadStatusText');
-
-            if (!fileInput.files || !fileInput.files[0]) {
-                alert("Please select a file first.");
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const qty = parseInt(qtyInput.value) || 0;
-
-            overlay.classList.remove('hidden');
-            statusText.textContent = "Uploading...";
-
-            try {
-                // Simplified Upload Logic - Less likely to get "stuck"
-                const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const fileName = 'inventory/' + Date.now() + '_' + safeName;
-                const storageRef = ref(storage, fileName);
-                
-                // Using standard uploadBytes instead of Resumable
-                const snapshot = await uploadBytes(storageRef, file);
-                
-                statusText.textContent = "Saving to Database...";
-                const downloadURL = await getDownloadURL(snapshot.ref);
-
-                await addDoc(colRef, {
-                    url: downloadURL,
-                    qty: qty,
-                    name: file.name,
-                    storagePath: snapshot.ref.fullPath,
-                    createdAt: Date.now()
-                });
-
-                fileInput.value = '';
-                qtyInput.value = '';
-                statusText.textContent = "✅ Success!";
-                
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                }, 1000);
-
-            } catch (error) {
-                console.error("Upload failed details:", error);
-                let msg = "Upload failed.";
-                if(error.code === 'storage/unauthorized') msg = "Permission Denied. Check Firebase Console Rules.";
-                alert(msg + "\n" + error.message);
-                overlay.classList.add('hidden');
             }
         }
 
         window.updateQty = async function(id, newQty) {
             if (!currentUser) return; 
-            const docRef = doc(db, "inventory_images", id);
-            try {
-                await updateDoc(docRef, { qty: parseInt(newQty) || 0 });
-            } catch(e) {
-                console.error(e);
-            }
+            try { await updateDoc(doc(db, "inventory_images", id), { qty: parseInt(newQty) || 0 }); } catch(e) { console.error(e); }
         }
 
         window.deleteImage = async function(id, storagePath) {
             if (!currentUser) return;
-            if(!confirm("Are you sure? This cannot be undone.")) return;
-
+            if(!confirm("Are you sure?")) return;
             try {
                 await deleteDoc(doc(db, "inventory_images", id));
-                if (storagePath) {
-                    const imageRef = ref(storage, storagePath);
-                    await deleteObject(imageRef);
-                }
-            } catch(e) {
-                console.error(e);
-                alert("Error deleting: " + e.message);
-            }
+                if (storagePath) await deleteObject(ref(storage, storagePath));
+            } catch(e) { console.error(e); alert(e.message); }
         }
 
-        // --- VIEW HELPERS ---
+        // --- SLIDESHOW ---
+        window.saveSlideshowSetting = function() {
+            localStorage.setItem('slideshow_delay', document.getElementById('slideDurationInput').value);
+        }
 
+        window.startSlideshow = function() {
+            if (localImages.length === 0) { alert("No images!"); return; }
+            let duration = Math.max(1, parseInt(document.getElementById('slideDurationInput').value) || 3);
+            
+            document.getElementById('slideshowOverlay').classList.remove('hidden');
+            currentSlideIndex = 0;
+            updateSlideshowImage();
+
+            if (slideshowInterval) clearInterval(slideshowInterval);
+            slideshowInterval = setInterval(() => {
+                currentSlideIndex = (currentSlideIndex + 1) % localImages.length;
+                updateSlideshowImage();
+            }, duration * 1000);
+        }
+
+        window.stopSlideshow = function() {
+            clearInterval(slideshowInterval);
+            document.getElementById('slideshowOverlay').classList.add('hidden');
+        }
+
+        function updateSlideshowImage() {
+            if (localImages[currentSlideIndex]) document.getElementById('slideshowImg').src = localImages[currentSlideIndex].url;
+        }
+
+        // --- UI HELPERS ---
         function renderAdminList() {
             const list = document.getElementById('adminList');
             const count = document.getElementById('itemCount');
@@ -495,53 +412,48 @@
                         <p class="text-sm font-bold text-gray-800 truncate">${img.name || 'Image'}</p>
                         <div class="mt-1 flex items-center space-x-2">
                             <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Qty:</span>
-                            <input type="number" value="${img.qty}" 
-                                onchange="window.updateQty('${img.id}', this.value)" 
-                                class="border-2 border-gray-50 p-1.5 rounded-lg w-20 text-sm font-bold focus:border-blue-400 outline-none">
+                            <input type="number" value="${img.qty}" onchange="window.updateQty('${img.id}', this.value)" class="border-2 border-gray-50 p-1.5 rounded-lg w-20 text-sm font-bold focus:border-blue-400 outline-none">
                         </div>
                     </div>
                     <button onclick="window.deleteImage('${img.id}', '${img.storagePath || ''}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 `;
                 list.appendChild(item);
             });
         }
 
-        // --- NON-MODULE HELPERS ---
-        
-        window.toggleSettingsModal = function() {
-            document.getElementById('authModal').classList.remove('hidden');
-            document.getElementById('passwordInput').focus();
+        function updateUI() {
+            const grid = document.getElementById('imageGrid');
+            const empty = document.getElementById('emptyState');
+            grid.innerHTML = '';
+            
+            if (localImages.length === 0) empty.classList.remove('hidden');
+            else {
+                empty.classList.add('hidden');
+                localImages.forEach(img => {
+                    const card = document.createElement('div');
+                    card.className = "group relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1";
+                    card.onclick = () => window.openFullscreen(img.url);
+                    card.innerHTML = `
+                        <div class="aspect-square bg-gray-50 overflow-hidden relative">
+                             <div class="absolute inset-0 bg-gray-200 animate-pulse" onload="this.style.display='none'"></div>
+                            <img src="${img.url}" alt="Item" class="w-full h-full object-cover" onload="this.previousElementSibling.style.display='none'">
+                        </div>
+                        <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest backdrop-blur-md border border-white/20 shadow-lg quantity-badge">QTY: ${img.qty}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+            if(!document.getElementById('settingsPanel').classList.contains('hidden')) renderAdminList();
         }
 
-        window.closeAuthModal = function() {
-            document.getElementById('authModal').classList.add('hidden');
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('authError').classList.add('hidden');
-        }
-
-        window.closeSettings = function() {
-            document.getElementById('settingsPanel').classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        window.openFullscreen = function(url) {
-            document.getElementById('fullscreenImage').src = url;
-            document.getElementById('fullscreenOverlay').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        window.closeFullscreen = function() {
-            document.getElementById('fullscreenOverlay').classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') window.checkPasswordAndLogin();
-        });
+        window.toggleSettingsModal = function() { document.getElementById('authModal').classList.remove('hidden'); document.getElementById('passwordInput').focus(); }
+        window.closeAuthModal = function() { document.getElementById('authModal').classList.add('hidden'); document.getElementById('passwordInput').value = ''; }
+        window.closeSettings = function() { document.getElementById('settingsPanel').classList.add('hidden'); document.body.style.overflow = ''; }
+        window.openFullscreen = function(url) { document.getElementById('fullscreenImage').src = url; document.getElementById('fullscreenOverlay').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        window.closeFullscreen = function() { document.getElementById('fullscreenOverlay').classList.add('hidden'); document.body.style.overflow = ''; }
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkPasswordAndLogin(); });
     </script>
 </body>
 </html>
