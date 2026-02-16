@@ -156,7 +156,10 @@
             <!-- Manage Existing Images -->
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-bold text-gray-800">Your Inventory</h3>
-                <span id="itemCount" class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">0 Items</span>
+                <div class="flex gap-2">
+                    <span id="totalQtyDisplay" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full border border-blue-200">Total Units: 0</span>
+                    <span id="itemCount" class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">0 Items</span>
+                </div>
             </div>
             <div id="adminList" class="grid grid-cols-1 gap-4 pb-12"></div>
         </div>
@@ -387,8 +390,15 @@
         function renderAdminList() {
             const list = document.getElementById('adminList');
             const count = document.getElementById('itemCount');
+            const totalQtyDisplay = document.getElementById('totalQtyDisplay');
+            
             list.innerHTML = '';
             count.textContent = `${localImages.length} Item${localImages.length === 1 ? '' : 's'}`;
+            
+            // Calculate Total Quantity
+            const totalQty = localImages.reduce((sum, img) => sum + (parseInt(img.qty) || 0), 0);
+            if(totalQtyDisplay) totalQtyDisplay.textContent = `Total Units: ${totalQty}`;
+
             if (localImages.length === 0) {
                 list.innerHTML = `<div class="text-center py-10 text-gray-400 bg-white rounded-xl border border-dashed">No items.</div>`;
                 return;
